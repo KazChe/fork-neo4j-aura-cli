@@ -107,3 +107,31 @@ func TestGetGraphQLDataApiIncludingGraphQLServerErrors(t *testing.T) {
 		]
 	}`)
 }
+
+func TestGetGraphQLDataApiWithTextOutput(t *testing.T) {
+	helper := testutils.NewAuraTestHelper(t)
+	defer helper.Close()
+
+	helper.SetConfigValue("aura.beta-enabled", true)
+
+	instanceId := "2f49c2b3"
+	dataApiId := "afdb4e9d"
+	mockHandler := helper.NewRequestHandlerMock(fmt.Sprintf("/v1/instances/%s/data-apis/graphql/%s", instanceId, dataApiId), http.StatusOK, `{
+		"data": {
+			"features": {
+				"subgraph": false
+			},
+			"id": "afdb4e9d",
+			"name": "friendly-name",
+			"status": "ready",
+			"url": "https://23423.453489590fdsgs34.test.com/graphql"
+		}
+	}`)
+
+	helper.ExecuteCommand(fmt.Sprintf("data-api graphql get --instance-id %s --output text %s", instanceId, dataApiId))
+
+	mockHandler.AssertCalledTimes(1)
+	mockHandler.AssertCalledWithMethod(http.MethodGet)
+
+	helper.AssertOut("afdb4e9d\tfriendly-name\tready\thttps://23423.453489590fdsgs34.test.com/graphql")
+}

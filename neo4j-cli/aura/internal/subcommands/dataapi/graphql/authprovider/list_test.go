@@ -46,3 +46,31 @@ func TestListAuthProviders(t *testing.T) {
 	}
 	`)
 }
+
+func TestListAuthProvidersWithTextOutput(t *testing.T) {
+	helper := testutils.NewAuraTestHelper(t)
+	defer helper.Close()
+
+	helper.SetConfigValue("aura.beta-enabled", true)
+
+	instanceId := "2f49c2b3"
+	dataApiId := "a342b824"
+	mockHandler := helper.NewRequestHandlerMock(fmt.Sprintf("/v1/instances/%s/data-apis/graphql/%s/auth-providers", instanceId, dataApiId), http.StatusOK, `{
+		"data": [
+			{
+				"id": "87d46b4b-3bfb-4ad2-8dac-0e95cf72d39f",
+				"name": "test-key",
+				"type": "jwks",
+				"enabled": true,
+				"url": "https://test.com/.well-known/jwks.json"
+			}
+		]	
+	}`)
+
+	helper.ExecuteCommand(fmt.Sprintf("data-api graphql auth-provider list --instance-id %s --data-api-id %s --output text", instanceId, dataApiId))
+
+	mockHandler.AssertCalledTimes(1)
+	mockHandler.AssertCalledWithMethod(http.MethodGet)
+
+	helper.AssertOut("87d46b4b-3bfb-4ad2-8dac-0e95cf72d39f\ttest-key\tjwks\ttrue\thttps://test.com/.well-known/jwks.json")
+}

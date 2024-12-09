@@ -60,3 +60,32 @@ func TestListCustomerManagedKeysWithInvalidOutput(t *testing.T) {
 
 	helper.AssertErr("Error: invalid output value specified: invalid")
 }
+
+func TestListTenantsWithTextOutput(t *testing.T) {
+	helper := testutils.NewAuraTestHelper(t)
+	defer helper.Close()
+
+	mockHandler := helper.NewRequestHandlerMock("/v1/tenants", http.StatusOK, `{
+			"data": [
+				{
+				"id": "6981ace7-efe8-4f5c-b7c5-267b5162ce91",
+				"name": "Production"
+				},
+				{
+				"id": "YOUR_TENANT_ID",
+				"name": "Staging"
+				},
+				{
+				"id": "da045ab3-3b89-4f45-8b96-528f2e47cd13",
+				"name": "Development"
+				}
+			]
+		}`)
+
+	helper.ExecuteCommand("tenant list --output text")
+
+	mockHandler.AssertCalledTimes(1)
+	mockHandler.AssertCalledWithMethod(http.MethodGet)
+
+	helper.AssertOut("6981ace7-efe8-4f5c-b7c5-267b5162ce91\tProduction\nYOUR_TENANT_ID\tStaging\nda045ab3-3b89-4f45-8b96-528f2e47cd13\tDevelopment")
+}

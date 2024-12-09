@@ -43,3 +43,29 @@ func TestListGraphQLDataApis(t *testing.T) {
 	}
 	`)
 }
+
+func TestListGraphQLDataApisWithTextOutput(t *testing.T) {
+	helper := testutils.NewAuraTestHelper(t)
+	defer helper.Close()
+
+	helper.SetConfigValue("aura.beta-enabled", true)
+
+	instanceId := "2f49c2b3"
+	mockHandler := helper.NewRequestHandlerMock(fmt.Sprintf("/v1/instances/%s/data-apis/graphql", instanceId), http.StatusOK, `{
+        "data": [
+            {
+                "id": "7261d20a",
+                "name": "friendly-name",
+                "status": "creating",
+                "url": "https://23423.453489590fdsgs34.test.com/graphql"
+            }
+        ]   
+    }`)
+
+	helper.ExecuteCommand(fmt.Sprintf("data-api graphql list --instance-id %s --output text", instanceId))
+
+	mockHandler.AssertCalledTimes(1)
+	mockHandler.AssertCalledWithMethod(http.MethodGet)
+
+	helper.AssertOut("7261d20a\tfriendly-name\tcreating\thttps://23423.453489590fdsgs34.test.com/graphql")
+}
